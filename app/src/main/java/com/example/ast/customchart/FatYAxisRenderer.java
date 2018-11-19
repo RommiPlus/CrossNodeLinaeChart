@@ -32,9 +32,9 @@ public class FatYAxisRenderer extends YAxisRenderer {
 
             // 处于图表区域范围内时绘制坐标
             float y = positions[i * 2 + 1] + offset;
-            if (y >= mViewPortHandler.contentTop() && y <= mViewPortHandler.contentBottom()) {
+//            if (y >= mViewPortHandler.contentTop() && y <= mViewPortHandler.contentBottom()) {
                 c.drawText(text, fixedPosition, y, mAxisLabelPaint);
-            }
+//            }
         }
 
         drawUnit(c, fixedPosition);

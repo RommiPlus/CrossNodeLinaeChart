@@ -3,6 +3,8 @@ package com.example.ast.customchart;
 import android.app.Activity;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.util.Log;
+import android.view.MotionEvent;
 
 import com.github.mikephil.charting.components.Legend;
 import com.github.mikephil.charting.components.XAxis;
@@ -12,6 +14,8 @@ import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.highlight.Highlight;
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
+import com.github.mikephil.charting.listener.ChartTouchListener;
+import com.github.mikephil.charting.listener.OnChartGestureListener;
 import com.github.mikephil.charting.listener.OnChartValueSelectedListener;
 
 import java.util.ArrayList;
@@ -58,7 +62,7 @@ public class MainActivity extends Activity {
 //        xAxis.enableGridDashedLine(10f, 10f, 0f);
         xAxis.setDrawAxisLine(false);
         xAxis.setDrawLabels(true);
-        xAxis.setLabelCount(23);
+//        xAxis.setLabelCount(24);
         xAxis.setYOffset(20f);
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
 
@@ -66,6 +70,7 @@ public class MainActivity extends Activity {
         leftAxis.setXOffset(20f);
         leftAxis.setDrawGridLines(false);
         leftAxis.setDrawAxisLine(false);
+        leftAxis.setLabelCount(5, true);
 //        leftAxis.removeAllLimitLines();
 //        leftAxis.setAxisMaximum(80f);
 //        leftAxis.setAxisMinimum(20f);
@@ -105,7 +110,7 @@ public class MainActivity extends Activity {
         Legend l = mChart.getLegend();
         l.setForm(Legend.LegendForm.LINE);
 
-        LineDataSet set1 = new LineDataSet(values, "听力线");
+        LineDataSet set1 = new LineDataSet(values, "");
 
 //        set1.enableDashedLine(10f, 5f, 0f);
 //        set1.enableDashedHighlightLine(10f, 5f, 0f);
@@ -142,7 +147,7 @@ public class MainActivity extends Activity {
         values2.add(new Entry(20, 35));
         values2.add(new Entry(21, 12));
         values2.add(new Entry(22, 46));
-        LineDataSet set2 = new LineDataSet(values2, "听力线");
+        LineDataSet set2 = new LineDataSet(values2, "");
 
         final ArrayList<ILineDataSet> dataSets = new ArrayList<>();
         dataSets.add(set1);
@@ -158,13 +163,13 @@ public class MainActivity extends Activity {
         set1.setHighlightLineWidth(10f);
 
         // 设置X轴滚动
-        mChart.setVisibleXRangeMinimum(4);
+        mChart.setVisibleXRangeMinimum(5);
         mChart.setVisibleXRangeMaximum(7);
 
         mChart.setRendererLeftYAxis(new FatYAxisRenderer(
                 mChart.getViewPortHandler(), mChart.getAxisLeft(),
                 mChart.getTransformer(YAxis.AxisDependency.LEFT)));
-        mChart.setExtraTopOffset(100f);
+        mChart.setExtraTopOffset(40f);
         mChart.setAutoScaleMinMaxEnabled(true);
         mChart.setMarker(new FatMarkerView(this, R.layout.layout_marker_view));
         mChart.setData(data);
@@ -173,7 +178,7 @@ public class MainActivity extends Activity {
             public void onValueSelected(Entry e, Highlight h) {
                 Highlight highlight1 = new Highlight(e.getX(), 0, -1);
                 Highlight highlight2 = new Highlight(e.getX(), 1, -1);
-                Highlight[] array = new Highlight[] {highlight1, highlight2};
+                Highlight[] array = new Highlight[]{highlight1, highlight2};
                 mChart.highlightValues(array);
             }
 
@@ -182,24 +187,83 @@ public class MainActivity extends Activity {
 
             }
         });
-    }
 
-    /**
-     * 判断当前的点是否已经高亮
-     *
-     * @param highlights
-     * @param i
-     * @return
-     */
-    private boolean isCurrentDataIsHighlighted(Highlight[] highlights, int i) {
-        for (int j = 0; j < highlights.length; j++) {
-            Highlight highlights1 = highlights[j];
-            // 当前统一X轴数据是否被高亮，没有高亮进行高亮，高亮不处理
-            if (i == highlights1.getDataSetIndex()) {
-                return true;
+        mChart.setOnChartGestureListener(new OnChartGestureListener() {
+            public boolean isChartLoadDataEnable;
+            public float lastRightIndex;
+            public float lastLeftIndex;
+
+            @Override
+            public void onChartGestureStart(MotionEvent me, ChartTouchListener.ChartGesture lastPerformedGesture) {
+                isChartLoadDataEnable = false;
             }
-        }
-        return false;
+
+            @Override
+            public void onChartGestureEnd(MotionEvent me, ChartTouchListener.ChartGesture lastPerformedGesture) {
+                float leftXIndex = mChart.getLowestVisibleX();    //获取可视区域中，显示在x轴最右边的index
+
+                if (lastPerformedGesture == ChartTouchListener.ChartGesture.DRAG) {
+                    if (leftXIndex <= 0) {
+                        isChartLoadDataEnable = false;
+                        //加载更多数据的操作
+
+                    } else {
+                        isChartLoadDataEnable = true;
+                    }
+                }
+            }
+
+            @Override
+            public void onChartLongPressed(MotionEvent me) {
+
+            }
+
+            @Override
+            public void onChartDoubleTapped(MotionEvent me) {
+
+            }
+
+            @Override
+            public void onChartSingleTapped(MotionEvent me) {
+
+            }
+
+            @Override
+            public void onChartFling(MotionEvent me1, MotionEvent me2, float velocityX, float velocityY) {
+
+            }
+
+            @Override
+            public void onChartScale(MotionEvent me, float scaleX, float scaleY) {
+
+            }
+
+            @Override
+            public void onChartTranslate(MotionEvent me, float dX, float dY) {
+                float leftXIndex = mChart.getLowestVisibleX();     //获取可视区域中，显示在x轴最右边的index
+                float rightXIndex = mChart.getHighestVisibleX();    //获取可视区域中，显示在x轴最右边的index
+                if (isChartLoadDataEnable) {
+                    if (leftXIndex <= 0 || rightXIndex >= values.size()) {
+                        isChartLoadDataEnable = false;
+                        //加载更多数据的操作
+                    }
+                }
+
+                // 往左划并且图表向左移动时
+                if (dX < 0 && rightXIndex - lastRightIndex > 0) {
+                    Log.v("TAG", "往左划并且图表向左移动时");
+                    lastLeftIndex = values.size();
+                    lastRightIndex = rightXIndex;
+                }
+
+                // 往右划并且图表向右移动时
+                if (dX > 0 && leftXIndex - lastLeftIndex < 0) {
+                    Log.v("TAG", "往右划并且图表向右移动时");
+                    lastRightIndex = 0;
+                    lastLeftIndex = leftXIndex;
+                }
+            }
+        });
     }
 
     /**
@@ -213,7 +277,7 @@ public class MainActivity extends Activity {
         bgList.add(new BgColor(0, 20, Color.parseColor("#FBE8E4")));//参数信息：纵坐标从0到20设置颜色为黄色
         bgList.add(new BgColor(20, 40, Color.parseColor("#F7F2DE")));//支持16进制颜色
         bgList.add(new BgColor(40, 70, Color.parseColor("#DCF3E5")));
-        bgList.add(new BgColor(70, 90, Color.parseColor("#E0F3FA")));
+        bgList.add(new BgColor(70, 110, Color.parseColor("#E0F3FA")));
         return bgList;
     }
 }

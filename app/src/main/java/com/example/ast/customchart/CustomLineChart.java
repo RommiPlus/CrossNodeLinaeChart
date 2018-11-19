@@ -10,6 +10,8 @@ import android.util.Log;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.data.Entry;
+import com.github.mikephil.charting.highlight.Highlight;
+import com.github.mikephil.charting.interfaces.datasets.IDataSet;
 import com.github.mikephil.charting.utils.MPPointD;
 import com.github.mikephil.charting.utils.Utils;
 
@@ -60,9 +62,102 @@ public class CustomLineChart extends LineChart {
      */
     @Override
     protected void onDraw(Canvas canvas) {
+        if (mData == null)
+            return;
+
+        // execute all drawing commands
+        drawGridBackground(canvas);
+
+        if (mAutoScaleMinMaxEnabled) {
+            autoScale();
+        }
+
+        if (mAxisLeft.isEnabled())
+            mAxisRendererLeft.computeAxis(mAxisLeft.mAxisMinimum, mAxisLeft.mAxisMaximum, mAxisLeft.isInverted());
+
+        if (mAxisRight.isEnabled())
+            mAxisRendererRight.computeAxis(mAxisRight.mAxisMinimum, mAxisRight.mAxisMaximum, mAxisRight.isInverted());
+
+        if (mXAxis.isEnabled())
+            mXAxisRenderer.computeAxis(mXAxis.mAxisMinimum, mXAxis.mAxisMaximum, false);
+
         drawBgColor(canvas);
-        super.onDraw(canvas);
-        Log.i(TAG, "onDraw");
+
+        mXAxisRenderer.renderAxisLine(canvas);
+        mAxisRendererLeft.renderAxisLine(canvas);
+        mAxisRendererRight.renderAxisLine(canvas);
+
+        if (mXAxis.isDrawGridLinesBehindDataEnabled())
+            mXAxisRenderer.renderGridLines(canvas);
+
+        if (mAxisLeft.isDrawGridLinesBehindDataEnabled())
+            mAxisRendererLeft.renderGridLines(canvas);
+
+        if (mAxisRight.isDrawGridLinesBehindDataEnabled())
+            mAxisRendererRight.renderGridLines(canvas);
+
+        if (mXAxis.isEnabled() && mXAxis.isDrawLimitLinesBehindDataEnabled())
+            mXAxisRenderer.renderLimitLines(canvas);
+
+        if (mAxisLeft.isEnabled() && mAxisLeft.isDrawLimitLinesBehindDataEnabled())
+            mAxisRendererLeft.renderLimitLines(canvas);
+
+        if (mAxisRight.isEnabled() && mAxisRight.isDrawLimitLinesBehindDataEnabled())
+            mAxisRendererRight.renderLimitLines(canvas);
+
+        // make sure the data cannot be drawn outside the content-rect
+        int clipRestoreCount = canvas.save();
+        canvas.clipRect(mViewPortHandler.getContentRect());
+
+        mRenderer.drawData(canvas);
+
+        if (!mXAxis.isDrawGridLinesBehindDataEnabled())
+            mXAxisRenderer.renderGridLines(canvas);
+
+        if (!mAxisLeft.isDrawGridLinesBehindDataEnabled())
+            mAxisRendererLeft.renderGridLines(canvas);
+
+        if (!mAxisRight.isDrawGridLinesBehindDataEnabled())
+            mAxisRendererRight.renderGridLines(canvas);
+
+        // if highlighting is enabled
+        if (valuesToHighlight())
+            mRenderer.drawHighlighted(canvas, mIndicesToHighlight);
+
+        // Removes clipping rectangle
+        canvas.restoreToCount(clipRestoreCount);
+
+        mRenderer.drawExtras(canvas);
+
+        if (mXAxis.isEnabled() && !mXAxis.isDrawLimitLinesBehindDataEnabled())
+            mXAxisRenderer.renderLimitLines(canvas);
+
+        if (mAxisLeft.isEnabled() && !mAxisLeft.isDrawLimitLinesBehindDataEnabled())
+            mAxisRendererLeft.renderLimitLines(canvas);
+
+        if (mAxisRight.isEnabled() && !mAxisRight.isDrawLimitLinesBehindDataEnabled())
+            mAxisRendererRight.renderLimitLines(canvas);
+
+        mXAxisRenderer.renderAxisLabels(canvas);
+        mAxisRendererLeft.renderAxisLabels(canvas);
+        mAxisRendererRight.renderAxisLabels(canvas);
+
+        if (isClipValuesToContentEnabled()) {
+            clipRestoreCount = canvas.save();
+            canvas.clipRect(mViewPortHandler.getContentRect());
+
+            mRenderer.drawValues(canvas);
+
+            canvas.restoreToCount(clipRestoreCount);
+        } else {
+            mRenderer.drawValues(canvas);
+        }
+
+        mLegendRenderer.renderLegend(canvas);
+
+        drawDescription(canvas);
+
+        drawMarkers(canvas);
     }
 
     public void setDrawCross(boolean enabled) {
@@ -128,5 +223,55 @@ public class CustomLineChart extends LineChart {
             y = mViewPortHandler.contentBottom();
         }
         return y;
+    }
+
+    @Override
+    protected void drawMarkers(Canvas canvas) {
+        // if there is no marker view or drawing marker is disabled
+        if (mMarker == null || !isDrawMarkersEnabled() || !valuesToHighlight())
+            return;
+
+        // 三个Marker合成一个：获取最高点，在最高点上画框
+        List<float[]> list = new ArrayList<>();
+        for (int i = 0; i < mIndicesToHighlight.length; i++) {
+
+            Highlight highlight = mIndicesToHighlight[i];
+
+            IDataSet set = mData.getDataSetByIndex(highlight.getDataSetIndex());
+
+            Entry e = mData.getEntryForHighlight(mIndicesToHighlight[i]);
+            int entryIndex = set.getEntryIndex(e);
+
+            // make sure entry not null
+            if (e == null || entryIndex > set.getEntryCount() * mAnimator.getPhaseX())
+                continue;
+
+            float[] pos = getMarkerPosition(highlight);
+
+            // check bounds
+            if (!mViewPortHandler.isInBounds(pos[0], pos[1]))
+                continue;
+
+            list.add(pos);
+        }
+
+        if (list.size() > 0) {
+            // 比较Y轴值，在最小值上画标记View
+            float xPos = 0;
+            float yPosMin = list.get(0)[1];
+            for (float[] pos : list) {
+                xPos = pos[0];
+                if (pos[1] <= yPosMin) {
+                    yPosMin = pos[1];
+                }
+            }
+
+            // 确定要绘制的内容样式
+            // callbacks to update the content
+            // mMarker.refreshContent(e, highlight);
+
+            // draw the marker
+            mMarker.draw(canvas, xPos, yPosMin);
+        }
     }
 }
