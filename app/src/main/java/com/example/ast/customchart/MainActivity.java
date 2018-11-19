@@ -5,6 +5,7 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MotionEvent;
+import android.widget.TextView;
 
 import com.github.mikephil.charting.components.Legend;
 import com.github.mikephil.charting.components.XAxis;
@@ -27,10 +28,19 @@ public class MainActivity extends Activity {
     private ArrayList<Entry> values = new ArrayList<>();
     private ArrayList<Entry> values2 = new ArrayList<>();
 
+    private TextView textView;
+    private float x_tmp1;
+    private float y_tmp1;
+    private float x_tmp2;
+    private float y_tmp2;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        textView = findViewById(R.id.textView);
+
         mChart = (CustomLineChart) findViewById(R.id.test_lineChart);
         mChart.getDescription().setEnabled(false);
         mChart.setTouchEnabled(true);
@@ -163,7 +173,7 @@ public class MainActivity extends Activity {
         set1.setHighlightLineWidth(10f);
 
         // 设置X轴滚动
-        mChart.setVisibleXRangeMinimum(5);
+        mChart.setVisibleXRangeMinimum(7);
         mChart.setVisibleXRangeMaximum(7);
 
         mChart.setRendererLeftYAxis(new FatYAxisRenderer(
@@ -188,6 +198,8 @@ public class MainActivity extends Activity {
             }
         });
 
+        mChart.setDragDecelerationEnabled(true);
+        mChart.setDragDecelerationFrictionCoef(0.9f);
         mChart.setOnChartGestureListener(new OnChartGestureListener() {
             public boolean isChartLoadDataEnable;
             public float lastRightIndex;
@@ -249,17 +261,26 @@ public class MainActivity extends Activity {
                     }
                 }
 
+                Log.v("TAG", "leftXIndex: " + leftXIndex
+                        + " rightXIndex: " + rightXIndex
+                        + "\n dX:" + dX);
+                //每次次手势动作的流程都会通过dx来表示
+                // TODO: 检测手势动作向左还是向右滑动，即使在一次手势动作情况下
                 // 往左划并且图表向左移动时
                 if (dX < 0 && rightXIndex - lastRightIndex > 0) {
                     Log.v("TAG", "往左划并且图表向左移动时");
-                    lastLeftIndex = values.size();
+                    textView.setText(String.valueOf(leftXIndex));
+
+                    lastLeftIndex = leftXIndex;
                     lastRightIndex = rightXIndex;
                 }
 
                 // 往右划并且图表向右移动时
                 if (dX > 0 && leftXIndex - lastLeftIndex < 0) {
                     Log.v("TAG", "往右划并且图表向右移动时");
-                    lastRightIndex = 0;
+                    textView.setText(String.valueOf(leftXIndex));
+
+                    lastRightIndex = rightXIndex;
                     lastLeftIndex = leftXIndex;
                 }
             }
