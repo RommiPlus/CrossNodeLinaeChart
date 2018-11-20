@@ -202,18 +202,23 @@ public class MainActivity extends Activity {
         mChart.setDragDecelerationFrictionCoef(0.9f);
         mChart.setOnChartGestureListener(new OnChartGestureListener() {
             public boolean isChartLoadDataEnable;
+            public boolean isInChartGesture;
             public float lastRightIndex;
             public float lastLeftIndex;
+            public float lastDx;
 
             @Override
             public void onChartGestureStart(MotionEvent me, ChartTouchListener.ChartGesture lastPerformedGesture) {
                 isChartLoadDataEnable = false;
+                isInChartGesture = true;
             }
 
             @Override
             public void onChartGestureEnd(MotionEvent me, ChartTouchListener.ChartGesture lastPerformedGesture) {
+                isInChartGesture = false;
                 float leftXIndex = mChart.getLowestVisibleX();    //获取可视区域中，显示在x轴最右边的index
 
+                // 手势动作结束，加载更多数据
                 if (lastPerformedGesture == ChartTouchListener.ChartGesture.DRAG) {
                     if (leftXIndex <= 0) {
                         isChartLoadDataEnable = false;
@@ -261,25 +266,32 @@ public class MainActivity extends Activity {
                     }
                 }
 
-                Log.v("TAG", "leftXIndex: " + leftXIndex
-                        + " rightXIndex: " + rightXIndex
-                        + "\n dX:" + dX);
-                //每次次手势动作的流程都会通过dx来表示
-                // TODO: 检测手势动作向左还是向右滑动，即使在一次手势动作情况下
+                Log.v("TAG", "leftXIndex: " + leftXIndex + " lastLeftIndex: " + lastLeftIndex
+                        + "\nrightXIndex: " + rightXIndex + " lastRightIndex: " + lastRightIndex
+                        + "\n dX:" + dX + " lastDx: " + lastDx);
+
+                // 如果在一次手势动作期间按照下面逻辑走，一次手势动作结束，将lastDx重置方便重新计算
+                // 每次次手势动作的流程都会通过dx来表示
+                if (!isInChartGesture) {
+                    lastDx = 0;
+                }
+
                 // 往左划并且图表向左移动时
-                if (dX < 0 && rightXIndex - lastRightIndex > 0) {
+                if (dX - lastDx < 0 && rightXIndex - lastRightIndex > 0) {
                     Log.v("TAG", "往左划并且图表向左移动时");
                     textView.setText(String.valueOf(leftXIndex));
 
+                    lastDx = dX;
                     lastLeftIndex = leftXIndex;
                     lastRightIndex = rightXIndex;
                 }
 
                 // 往右划并且图表向右移动时
-                if (dX > 0 && leftXIndex - lastLeftIndex < 0) {
+                if (dX - lastDx > 0 && leftXIndex - lastLeftIndex < 0) {
                     Log.v("TAG", "往右划并且图表向右移动时");
                     textView.setText(String.valueOf(leftXIndex));
 
+                    lastDx = dX;
                     lastRightIndex = rightXIndex;
                     lastLeftIndex = leftXIndex;
                 }
