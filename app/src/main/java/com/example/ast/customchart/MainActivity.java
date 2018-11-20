@@ -81,6 +81,12 @@ public class MainActivity extends Activity {
         leftAxis.setDrawGridLines(false);
         leftAxis.setDrawAxisLine(false);
         leftAxis.setLabelCount(5, true);
+
+        YAxis rightAxis = mChart.getAxisRight();
+        rightAxis.setXOffset(20f);
+        rightAxis.setDrawGridLines(false);
+        rightAxis.setDrawAxisLine(false);
+        rightAxis.setLabelCount(5, true);
 //        leftAxis.removeAllLimitLines();
 //        leftAxis.setAxisMaximum(80f);
 //        leftAxis.setAxisMinimum(20f);
@@ -91,7 +97,7 @@ public class MainActivity extends Activity {
 //        leftAxis.setDrawZeroLine(false);
 //        leftAxis.setDrawAxisLine(false);
 //        leftAxis.setDrawLabels(true);
-        mChart.getAxisRight().setEnabled(false);
+//        mChart.getAxisRight().setEnabled(false);
 
         values.add(new Entry(0, 12));
         values.add(new Entry(1, 43));
@@ -129,6 +135,7 @@ public class MainActivity extends Activity {
         set1.setLineWidth(2f);
         set1.setDrawValues(false);
         set1.setDrawFilled(false);
+        set1.setAxisDependency(YAxis.AxisDependency.LEFT);
 //        set1.setFormLineWidth(1f);
 //        set1.setFormLineDashEffect(new DashPathEffect(new float[]{10f, 5f}, 0f));
 //        set1.setFormSize(15.f);
@@ -158,6 +165,7 @@ public class MainActivity extends Activity {
         values2.add(new Entry(21, 12));
         values2.add(new Entry(22, 46));
         LineDataSet set2 = new LineDataSet(values2, "");
+        set2.setAxisDependency(YAxis.AxisDependency.RIGHT);
 
         final ArrayList<ILineDataSet> dataSets = new ArrayList<>();
         dataSets.add(set1);
