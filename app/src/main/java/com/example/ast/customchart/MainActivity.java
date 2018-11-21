@@ -18,8 +18,11 @@ import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 import com.github.mikephil.charting.listener.ChartTouchListener;
 import com.github.mikephil.charting.listener.OnChartGestureListener;
 import com.github.mikephil.charting.listener.OnChartValueSelectedListener;
+import com.github.mikephil.charting.utils.EntryXComparator;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class MainActivity extends Activity {
 
@@ -33,6 +36,8 @@ public class MainActivity extends Activity {
     private float y_tmp1;
     private float x_tmp2;
     private float y_tmp2;
+    private LineData lineData;
+    private XAxis xAxis;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,18 +68,19 @@ public class MainActivity extends Activity {
         mChart.setBgColor(getBg());
 
 
-        XAxis xAxis = mChart.getXAxis();
+        xAxis = mChart.getXAxis();
         xAxis.setAxisMinimum(0f);
         xAxis.setAxisMaximum(22f);
         xAxis.setGranularity(1f);
+        xAxis.setLabelCount(23);
         xAxis.setDrawLimitLinesBehindData(false);
         xAxis.setDrawGridLines(false);
 //        xAxis.enableGridDashedLine(10f, 10f, 0f);
         xAxis.setDrawAxisLine(false);
         xAxis.setDrawLabels(true);
-//        xAxis.setLabelCount(24);
         xAxis.setYOffset(20f);
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
+        xAxis.setValueFormatter(new MyYAxisValueFormatter());
 
         YAxis leftAxis = mChart.getAxisLeft();
         leftAxis.setXOffset(20f);
@@ -104,7 +110,7 @@ public class MainActivity extends Activity {
         values.add(new Entry(2, 55));
         values.add(new Entry(3, 13));
         values.add(new Entry(4, 34));
-        values.add(new Entry(5, 33));
+//        values.add(new Entry(5, 33));
         values.add(new Entry(6, 65));
         values.add(new Entry(7, 25));
         values.add(new Entry(8, 34));
@@ -146,7 +152,7 @@ public class MainActivity extends Activity {
         values2.add(new Entry(2, 55));
         values2.add(new Entry(3, 16));
         values2.add(new Entry(4, 34));
-        values2.add(new Entry(5, 33));
+//        values2.add(new Entry(5, 33));
         values2.add(new Entry(6, 55));
         values2.add(new Entry(7, 25));
         values2.add(new Entry(8, 24));
@@ -171,7 +177,7 @@ public class MainActivity extends Activity {
         dataSets.add(set1);
         dataSets.add(set2);
 
-        LineData data = new LineData(dataSets);
+        lineData = new LineData(dataSets);
 
         set1.setHighlightEnabled(true); // allow highlighting for DataSet
 
@@ -182,7 +188,7 @@ public class MainActivity extends Activity {
 
         // 设置X轴滚动
         mChart.setVisibleXRangeMinimum(7);
-        mChart.setVisibleXRangeMaximum(7);
+        mChart.setVisibleXRangeMaximum(8);
 
         mChart.setRendererLeftYAxis(new FatYAxisRenderer(
                 mChart.getViewPortHandler(), mChart.getAxisLeft(),
@@ -190,7 +196,7 @@ public class MainActivity extends Activity {
         mChart.setExtraTopOffset(40f);
         mChart.setAutoScaleMinMaxEnabled(true);
         mChart.setMarker(new FatMarkerView(this, R.layout.layout_marker_view));
-        mChart.setData(data);
+        mChart.setData(lineData);
         mChart.setOnChartValueSelectedListener(new OnChartValueSelectedListener() {
             @Override
             public void onValueSelected(Entry e, Highlight h) {
@@ -230,8 +236,7 @@ public class MainActivity extends Activity {
                 if (lastPerformedGesture == ChartTouchListener.ChartGesture.DRAG) {
                     if (leftXIndex <= 0) {
                         isChartLoadDataEnable = false;
-                        //加载更多数据的操作
-
+                        addData();
                     } else {
                         isChartLoadDataEnable = true;
                     }
@@ -268,9 +273,10 @@ public class MainActivity extends Activity {
                 float leftXIndex = mChart.getLowestVisibleX();     //获取可视区域中，显示在x轴最右边的index
                 float rightXIndex = mChart.getHighestVisibleX();    //获取可视区域中，显示在x轴最右边的index
                 if (isChartLoadDataEnable) {
-                    if (leftXIndex <= 0 || rightXIndex >= values.size()) {
+                    if (leftXIndex <= 0) {
                         isChartLoadDataEnable = false;
                         //加载更多数据的操作
+                        addData();
                     }
                 }
 
@@ -307,6 +313,35 @@ public class MainActivity extends Activity {
         });
     }
 
+    private void addData() {
+        //加载更多数据的操作
+        xAxis.setAxisMinimum(-10f);
+        xAxis.setAxisMaximum(22f);
+        xAxis.setGranularity(1f);
+        xAxis.setLabelCount(33);
+
+        List<Entry> list = new ArrayList<>();
+        list.add(new Entry(-1, 12));
+        list.add(new Entry(-2, 12));
+        list.add(new Entry(-3, 45));
+        list.add(new Entry(-4, 12));
+        list.add(new Entry(-5, 12));
+        list.add(new Entry(-6, 45));
+        list.add(new Entry(-7, 12));
+        list.add(new Entry(-8, 45));
+        list.add(new Entry(-9, 12));
+        list.add(new Entry(-10, 23));
+        values.addAll(0, list);
+        Collections.sort(values, new EntryXComparator());
+        lineData.notifyDataChanged(); // let the data know a dataSet changed
+        mChart.notifyDataSetChanged(); // let the chart know it's data changed
+        mChart.invalidate(); // refresh
+
+        // 设置X轴滚动
+        mChart.setVisibleXRangeMinimum(7);
+        mChart.setVisibleXRangeMaximum(8);
+    }
+
     /**
      * 分段背景设置
      *
@@ -315,10 +350,10 @@ public class MainActivity extends Activity {
     private ArrayList<BgColor> getBg() {
         ArrayList<BgColor> bgList = new ArrayList<>();
 
-        bgList.add(new BgColor(0, 20, Color.parseColor("#FBE8E4")));//参数信息：纵坐标从0到20设置颜色为黄色
-        bgList.add(new BgColor(20, 40, Color.parseColor("#F7F2DE")));//支持16进制颜色
-        bgList.add(new BgColor(40, 70, Color.parseColor("#DCF3E5")));
-        bgList.add(new BgColor(70, 110, Color.parseColor("#E0F3FA")));
+        bgList.add(new BgColor(0, 20, Color.parseColor("#FAE8E3")));//参数信息：纵坐标从0到20设置颜色为黄色
+        bgList.add(new BgColor(20, 40, Color.parseColor("#F7F2DF")));//支持16进制颜色
+        bgList.add(new BgColor(40, 70, Color.parseColor("#DDF4E5")));
+        bgList.add(new BgColor(70, 110, Color.parseColor("#E1F2FB")));
         return bgList;
     }
 }
